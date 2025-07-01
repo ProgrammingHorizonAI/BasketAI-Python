@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 from statistics import mean
+from random import randint
 
 from player import Player
 from basketball import BasketBall
@@ -31,21 +32,18 @@ class Game:
         self.width = WIDTH
         self.height = HEIGHT
 
-        # Initialize game objects
-        self.player = Player(self.width // 2, self.height // 2, self)
-        self.basketball = BasketBall(self.width // 2, 50, self)
-        self.basket1 = Basket()
-        self.basket2 = Basket()
-
-        self.model = Model(self)
+        self.analyse = False # True or False
+        self.random_mode = 0 # 0 : no random, 1 : only player, 2 : all random
 
         # Game Constants
         self.fps = fps
         self.dt = 1 / fps
         self.width = WIDTH
-
-        self.analyse = False # True or False
         
+        # Initialize game objects
+        self.basket1 = Basket()
+        self.basket2 = Basket()
+
         self.points = []
         self.points.extend(BoxCollider(0, 110, 6, 90, gap=5).generate_point_colliders())
         # First basket
@@ -94,9 +92,19 @@ class Game:
 
         self.reset()
 
+        self.model = Model(self)
+    
+
     def reset(self):
-        self.player = Player(self.width // 2, self.height // 2, self)
-        self.basketball = BasketBall(self.width // 2, 50, self)
+        if self.random_mode >= 1:
+            self.player = Player(randint(100, self.width - 100), randint(50, self.height - 50), self)
+            if self.random_mode == 2:
+                self.basketball = BasketBall(randint(20, self.width - 80) + self.player.radius, randint(0, self.height // 3) + self.player.radius, self)
+            else:
+                self.basketball = BasketBall(self.width // 2, 50, self)
+        else:
+            self.player = Player(self.width // 2, self.height // 2, self)
+            self.basketball = BasketBall(self.width // 2, 50, self)
 
         # Score
         self.score = 0
