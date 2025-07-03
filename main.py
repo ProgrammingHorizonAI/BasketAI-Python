@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 from statistics import mean
+from random import randint
 
 from player import Player
 from basketball import BasketBall
@@ -31,21 +32,18 @@ class Game:
         self.width = WIDTH
         self.height = HEIGHT
 
-        # Initialize game objects
-        self.player = Player(self.width // 2, self.height // 2, self)
-        self.basketball = BasketBall(self.width // 2, 50, self)
-        self.basket1 = Basket()
-        self.basket2 = Basket()
-
-        self.model = Model(self)
+        self.analyse = False # True or False
+        self.random_mode = 0 # 0 : no random, 1 : only player, 2 : all random
 
         # Game Constants
         self.fps = fps
         self.dt = 1 / fps
         self.width = WIDTH
-
-        self.analyse = False # True or False
         
+        # Initialize game objects
+        self.basket1 = Basket()
+        self.basket2 = Basket()
+
         self.points = []
         self.points.extend(BoxCollider(0, 110, 6, 90, gap=5).generate_point_colliders())
         # First basket
@@ -66,7 +64,7 @@ class Game:
             PointCollider(68, 199), PointCollider(67, 202), PointCollider(67, 206),
             PointCollider(66, 209), PointCollider(66, 213), PointCollider(66, 217),
             PointCollider(66, 221), PointCollider(65, 225), PointCollider(65, 228),
-            PointCollider(65, 223), PointCollider(43, 210, False)
+            PointCollider(65, 223), PointCollider(43, 225, True)
         ]
         # Second basket
         self.points.extend(BoxCollider(794, 110, 6, 90, gap=5).generate_point_colliders())
@@ -86,17 +84,27 @@ class Game:
             PointCollider(730, 188), PointCollider(731, 191), PointCollider(732, 195),
             PointCollider(732, 199), PointCollider(733, 202), PointCollider(733, 206),
             PointCollider(734, 209), PointCollider(734, 213), PointCollider(734, 217),
-            PointCollider(734, 221), PointCollider(735, 225), PointCollider(735, 228),
-            PointCollider(735, 223), PointCollider(757, 210, False)
+            PointCollider(734, 221), PointCollider(735, 230), PointCollider(735, 228),
+            PointCollider(735, 223), PointCollider(757, 230, True)
         ]
 
         self.colliding = []
 
         self.reset()
 
+        self.model = Model(self)
+    
+
     def reset(self):
-        self.player = Player(self.width // 2, self.height // 2, self)
-        self.basketball = BasketBall(self.width // 2, 50, self)
+        if self.random_mode >= 1:
+            self.player = Player(randint(100, self.width - 100), randint(50, self.height - 50), self)
+            if self.random_mode == 2:
+                self.basketball = BasketBall(randint(20, self.width - 80) + self.player.radius, randint(0, self.height // 3) + self.player.radius, self)
+            else:
+                self.basketball = BasketBall(self.width // 2, 50, self)
+        else:
+            self.player = Player(self.width // 2, self.height // 2, self)
+            self.basketball = BasketBall(self.width // 2, 50, self)
 
         # Score
         self.score = 0
@@ -143,7 +151,7 @@ class Game:
             if status:
                 collided_points.append(i)
                 collided_points_distances.append(d)
-            elif not i.solid:
+            elif i.score:
                 if i in self.colliding:
                     self.colliding.remove(i)
 
@@ -152,16 +160,20 @@ class Game:
                 collided_points_distances.index(min(collided_points_distances))
             ]
             # Check if it is a solid collider
-            if closest_collided_point.solid:
+            if not closest_collided_point.score:
                 closest_collided_point.handle_collision(self.basketball)
                 closest_collided_point.resolve_overlap(self.basketball)
             
             # Handle collisions to score points
             elif closest_collided_point in self.colliding:
                 return
+
             else:
-                self.colliding.append(closest_collided_point)
-                self.score += 1
+                if not closest_collided_point.handle_collision(self.basketball):
+                    self.score += 1
+                    self.colliding.append(closest_collided_point)
+                else:
+                    closest_collided_point.resolve_overlap(self.basketball)
 
         # Collision Handeling: Player <--> BasketBall
         if self.check_collision():

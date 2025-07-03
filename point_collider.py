@@ -6,10 +6,10 @@ COLLISION_SLOWDOWN_Y = 0.9
 
 
 class PointCollider:
-    def __init__(self, x, y, solid = True) -> None:
+    def __init__(self, x, y, score = False) -> None:
         self.pos = np.array([x, y], dtype=float)
         self.is_active = True
-        self.solid = solid
+        self.score = score
 
     def check_collision(self, obj):
         distance = np.linalg.norm(self.pos - obj.pos)
@@ -18,8 +18,6 @@ class PointCollider:
         return False, distance
 
     def resolve_overlap(self, obj):
-        if not self.solid:
-            return
         # Calculate the distance vector and magnitude
         distance_vector = obj.pos - self.pos
         distance = np.linalg.norm(distance_vector)
@@ -34,8 +32,8 @@ class PointCollider:
         obj.pos += direction * overlap
 
     def handle_collision(self, obj):
-        if not self.solid:
-            return
+        if self.score and obj.vel[1] > 0:
+            return 0
         obj.vel = (
             obj.vel
             - 2
@@ -53,8 +51,10 @@ class PointCollider:
         #     obj.vel[0] = 0
         #     obj.vel[1] = 0
 
+        return 1
+
     def draw(self, surface, col = (0, 255, 255)):
-        if not self.solid:
+        if self.score:
             col = (255, 255, 0)
         pygame.draw.circle(
             surface,
